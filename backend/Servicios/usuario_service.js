@@ -1,5 +1,6 @@
 import pool from '../config/db.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 //FUNCIONES AUXILIARES PARA LOS USUARIOS 
 async function buscarPorCorreo(identificador_de_usuario) {
@@ -41,7 +42,12 @@ export async function loginUsuario(identificador, password) {
         throw new Error('CREDENCIALES_INVALIDAS');
     }
 
-    const { password_hash, ...usuarioSinPassword } = usuario;
-    return usuarioSinPassword;
+    const token = jwt.sign(
+        { id: usuario.id, rol: usuario.rol },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+    );
 
+    const { password_hash, ...usuarioSinPassword } = usuario;
+    return { usuario: usuarioSinPassword, token };
 }

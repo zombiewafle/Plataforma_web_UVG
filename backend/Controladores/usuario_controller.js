@@ -39,13 +39,17 @@ export async function loginUsuario(req, res) {
         return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
-
-
     try {
         const usuario = await usuarioService.loginUsuario(identificador, password);
         console.log("Logeo exitoso")
+        res.status(200).json(usuario);
+
     } catch (error) {
+        if (error.message === 'CREDENCIALES_INVALIDAS') {
+            return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+        }
+
         console.error(error);
-        res.status(500).json({ error: 'Error al obtener usuarios' });
+        res.status(500).json({ error: 'Error al iniciar sesión' });
     }
 };

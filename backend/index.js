@@ -1,14 +1,14 @@
 //Este archivo reune todas las llamadas a la db.
-
+import 'dotenv/config';
 import express from "express";
-import router from "./Rutas/usuario_route.js";
+import usuarioRouter from "./Rutas/usuario_route.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-app.use('/api/usuarios', router);
+app.use('/api/usuarios', usuarioRouter);
 
 app.listen(PORT, () => {
     console.log('Servidor ejecutandose');
