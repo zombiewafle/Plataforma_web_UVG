@@ -28,7 +28,7 @@ function Login() {
                 throw new Error(datos.error || 'Credenciales Incorrectas');
             }
 
-            localStorage.setItem('token', datos.token);
+            // localStorage.setItem('token', datos.token);
 
         } catch (error) {
             setError(error.message);

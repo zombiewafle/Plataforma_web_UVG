@@ -21,7 +21,6 @@ export async function registrarUsuario(req, res) {
         const usuario = await usuarioService.registrarUsuario(req.body);
         res.status(201).json(usuario);
     } catch (error) {
-        console.error(error);
 
         if (error.errno === 1062) {
             return res.status(409).json({ error: "Un usuario con ese correo electrónico ya existe." });
@@ -40,9 +39,22 @@ export async function loginUsuario(req, res) {
     }
 
     try {
-        const usuario = await usuarioService.loginUsuario(identificador, password);
-        console.log("Logeo exitoso")
-        res.status(200).json(usuario);
+        const resultado = await usuarioService.loginUsuario(
+            identificador,
+            password
+        );
+
+        res.cookie('token', resultado.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/'
+        });
+
+        return res.status(200).json({
+            usuario: resultado.usuario
+        });
 
     } catch (error) {
         if (error.message === 'CREDENCIALES_INVALIDAS') {
