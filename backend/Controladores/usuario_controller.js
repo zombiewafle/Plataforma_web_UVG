@@ -65,3 +65,34 @@ export async function loginUsuario(req, res) {
         res.status(500).json({ error: 'Error al iniciar sesión' });
     }
 };
+
+export async function obtenerPerfil(req, res) {
+    const id = req.usuario.id;
+
+    try {
+        const resultado = await usuarioService.obtenerPerfil(id);
+        if (!resultado) {
+            return res.status(400).json({ error: "Usuario no encontrado" });
+        }
+        return res.status(200).json(resultado)
+
+    } catch (error) {
+        console.error(error);
+        res.status(404).json({ error: "Usuario no encontrado" });
+
+    }
+};
+
+export async function logout(req, res) {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/'
+    });
+    return res.status(200).json({
+        mensaje: 'Sesión cerrada correctamente'
+    })
+};
+
+

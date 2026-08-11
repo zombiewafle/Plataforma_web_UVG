@@ -45,9 +45,22 @@ export async function loginUsuario(identificador, password) {
     const token = jwt.sign(
         { id: usuario.id, rol: usuario.rol },
         process.env.JWT_SECRET,
-        { expiresIn: '7d' }
+        {
+            expiresIn: '7d',
+            algorithm: 'HS256'
+        }
     );
 
     const { password_hash, ...usuarioSinPassword } = usuario;
     return { usuario: usuarioSinPassword, token };
 }
+
+export async function obtenerPerfil(id) {
+    const [resultado] = await pool.query(
+        'SELECT id, username, nombre, correo, rol, creado_en FROM usuarios WHERE id = ? LIMIT 1', [id]
+    );
+    return resultado[0];
+
+}
+
+

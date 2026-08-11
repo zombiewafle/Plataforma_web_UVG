@@ -2,7 +2,7 @@ import Login from "../Vistas/Login"
 import RootLayout from "./RouteLayout";
 import AuthLayout from "./AuthLayout";
 import Home from '../Vistas/Home';
-import { Navigate } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 
 const router = createBrowserRouter([
     {
