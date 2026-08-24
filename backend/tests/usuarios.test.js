@@ -1,7 +1,7 @@
-import { before, beforeEach, describe, it } from 'node:test';
+import { after, before, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-
+import pool from '../config/db.js';
 import app from '../app.js';
 
 
@@ -233,4 +233,19 @@ describe('POST /api/usuarios/logout', () => {
         assert.strictEqual(logout.status, 401);
         assert.strictEqual(logout.body.error, 'No autenticado');
     });
+});
+
+// Tras completar los test, cierra la conexion con la db
+after(async () => {
+    await pool.query(`
+        DELETE FROM usuarios
+        WHERE username LIKE 'supertest%'
+           OR username LIKE 'login_test%'
+           OR username LIKE 'perfil_test%'
+           OR username LIKE 'logout_test%'
+           OR username LIKE 'otro_test%'
+           OR username LIKE 'test%'
+    `);
+
+    await pool.end();
 });
