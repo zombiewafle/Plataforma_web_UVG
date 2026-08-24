@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node --env-file=.env index.js",
     "dev": "node --env-file=.env --watch index.js",
+    "test": "node --env-file=.env.test --test",
     "check": "find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check"
   },
   "keywords": [],
@@ -21,5 +22,8 @@
   },
   "allowScripts": {
     "bcrypt@6.0.0": true
+  },
+  "devDependencies": {
+    "supertest": "^7.2.2"
   }
 }
