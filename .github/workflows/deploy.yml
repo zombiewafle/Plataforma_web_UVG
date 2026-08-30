@@ -7,14 +7,14 @@ on:
       - completed
 
 jobs:
-  deploy-backend:
-    name: Deploy Backend
+  deploy:
+    name: Deploy Producción
     runs-on: ubuntu-latest
 
-    # Solo desplegar:
-    # 1. si CI terminó correctamente
-    # 2. si fue un push
-    # 3. si fue sobre main
+    # Solo desplegar si:
+    # 1. CI terminó correctamente
+    # 2. fue un push
+    # 3. fue sobre main
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
@@ -27,16 +27,52 @@ jobs:
       PROD_USER: ${{ secrets.PROD_USER }}
 
     steps:
+      # --------------------------------------------------
+      # Descargar exactamente el commit que aprobó CI
+      # --------------------------------------------------
+
       - name: Descargar código aprobado por CI
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Definir nombre del release
         env:
           COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           echo "RELEASE_NAME=release-${COMMIT_SHA:0:12}" >> "$GITHUB_ENV"
+
+      # --------------------------------------------------
+      # FRONTEND
+      # --------------------------------------------------
+
+      - name: Instalar dependencias del frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Compilar frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api
+        run: npm run build
+
+      - name: Empaquetar frontend
+        run: |
+          tar \
+            -C frontend/dist \
+            -czf frontend-release.tar.gz \
+            .
+
+      # --------------------------------------------------
+      # BACKEND
+      # --------------------------------------------------
 
       - name: Empaquetar backend
         working-directory: backend
@@ -47,6 +83,10 @@ jobs:
             --exclude='./.env.test' \
             --exclude='./tests' \
             -czf ../backend-release.tar.gz .
+
+      # --------------------------------------------------
+      # SSH
+      # --------------------------------------------------
 
       - name: Configurar SSH
         env:
@@ -63,13 +103,23 @@ jobs:
           printf '%s %s\n' "$PROD_HOST" "$HOST_KEY" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Crear directorio del release
+      # --------------------------------------------------
+      # Crear releases
+      # --------------------------------------------------
+
+      - name: Crear directorios de release
         run: |
           ssh \
             -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \
             "$PROD_USER@$PROD_HOST" \
-            "mkdir -p /opt/aprendewebgt/releases/$RELEASE_NAME"
+            "mkdir -p \
+              /opt/aprendewebgt/releases/$RELEASE_NAME \
+              /var/www/aprendewebgt/frontend-releases/$RELEASE_NAME"
+
+      # --------------------------------------------------
+      # Subir archivos
+      # --------------------------------------------------
 
       - name: Subir backend
         run: |
@@ -79,7 +129,19 @@ jobs:
             backend-release.tar.gz \
             "$PROD_USER@$PROD_HOST:/opt/aprendewebgt/releases/$RELEASE_NAME/backend-release.tar.gz"
 
-      - name: Instalar y activar release
+      - name: Subir frontend
+        run: |
+          scp \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            frontend-release.tar.gz \
+            "$PROD_USER@$PROD_HOST:/var/www/aprendewebgt/frontend-releases/$RELEASE_NAME/frontend-release.tar.gz"
+
+      # --------------------------------------------------
+      # Preparar backend
+      # --------------------------------------------------
+
+      - name: Preparar backend
         run: |
           ssh \
             -i ~/.ssh/deploy_key \
@@ -93,11 +155,39 @@ jobs:
               rm backend-release.tar.gz
 
               /usr/local/bin/npm ci --omit=dev
-
-              sudo /usr/local/sbin/aprendewebgt-activate $RELEASE_NAME
             "
 
-      - name: Verificar producción
+      # --------------------------------------------------
+      # Preparar frontend
+      # --------------------------------------------------
+
+      - name: Preparar frontend
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            "$PROD_USER@$PROD_HOST" "
+              set -e
+
+              cd /var/www/aprendewebgt/frontend-releases/$RELEASE_NAME
+
+              tar -xzf frontend-release.tar.gz
+              rm frontend-release.tar.gz
+            "
+
+      # --------------------------------------------------
+      # Activar backend
+      # --------------------------------------------------
+
+      - name: Activar backend
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            "$PROD_USER@$PROD_HOST" \
+            "sudo /usr/local/sbin/aprendewebgt-activate $RELEASE_NAME"
+
+      - name: Verificar backend
         run: |
           curl \
             --fail \
@@ -106,3 +196,26 @@ jobs:
             --retry 5 \
             --retry-delay 2 \
             https://aprendewebgt.lat/api/health
+
+      # --------------------------------------------------
+      # Activar frontend
+      # --------------------------------------------------
+
+      - name: Activar frontend
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            "$PROD_USER@$PROD_HOST" \
+            "sudo /usr/local/sbin/aprendewebgt-frontend-activate $RELEASE_NAME"
+
+      - name: Verificar frontend
+        run: |
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 5 \
+            --retry-delay 2 \
+            https://aprendewebgt.lat/ \
+            > /dev/null
