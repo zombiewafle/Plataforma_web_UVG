@@ -1,6 +1,3 @@
-from pathlib import Path
-
-schema = r"""/*M!999999\- enable the sandbox mode */
 -- MariaDB schema for plataforma_uvg_test
 -- Cleaned for CI: duplicate foreign keys removed and tables ordered by dependency.
 
@@ -14,16 +11,12 @@ SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 
--- Drop dependent tables first
 DROP TABLE IF EXISTS `progreso_ejercicios`;
 DROP TABLE IF EXISTS `solicitudes_maestros`;
 DROP TABLE IF EXISTS `ejercicios`;
 DROP TABLE IF EXISTS `cursos`;
 DROP TABLE IF EXISTS `usuarios`;
 
--- ------------------------------------------------------
--- Table structure for table `usuarios`
--- ------------------------------------------------------
 CREATE TABLE `usuarios` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(50) NOT NULL,
@@ -39,9 +32,6 @@ CREATE TABLE `usuarios` (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------
--- Table structure for table `cursos`
--- ------------------------------------------------------
 CREATE TABLE `cursos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `titulo` varchar(100) NOT NULL,
@@ -54,9 +44,6 @@ CREATE TABLE `cursos` (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------
--- Table structure for table `ejercicios`
--- ------------------------------------------------------
 CREATE TABLE `ejercicios` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `curso_id` int(11) NOT NULL,
@@ -72,9 +59,6 @@ CREATE TABLE `ejercicios` (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------
--- Table structure for table `solicitudes_maestros`
--- ------------------------------------------------------
 CREATE TABLE `solicitudes_maestros` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `usuario_id` int(11) NOT NULL,
@@ -94,9 +78,6 @@ CREATE TABLE `solicitudes_maestros` (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
--- ------------------------------------------------------
--- Table structure for table `progreso_ejercicios`
--- ------------------------------------------------------
 CREATE TABLE `progreso_ejercicios` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `usuario_id` int(11) NOT NULL,
@@ -121,8 +102,3 @@ SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT;
 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS;
 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION;
-"""
-
-path = Path("/mnt/data/schema.sql")
-path.write_text(schema, encoding="utf-8")
-print(f"Archivo creado: {path}")
