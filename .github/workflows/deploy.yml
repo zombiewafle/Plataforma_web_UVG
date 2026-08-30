@@ -1,0 +1,108 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+
+    # Solo desplegar:
+    # 1. si CI terminó correctamente
+    # 2. si fue un push
+    # 3. si fue sobre main
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+
+    environment: production
+
+    env:
+      PROD_HOST: ${{ secrets.PROD_HOST }}
+      PROD_USER: ${{ secrets.PROD_USER }}
+
+    steps:
+      - name: Descargar código aprobado por CI
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Definir nombre del release
+        env:
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "RELEASE_NAME=release-${COMMIT_SHA:0:12}" >> "$GITHUB_ENV"
+
+      - name: Empaquetar backend
+        working-directory: backend
+        run: |
+          tar \
+            --exclude='./node_modules' \
+            --exclude='./.env' \
+            --exclude='./.env.test' \
+            --exclude='./tests' \
+            -czf ../backend-release.tar.gz .
+
+      - name: Configurar SSH
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_HOST_KEY: ${{ secrets.PROD_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$PROD_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          HOST_KEY="$(printf '%s\n' "$PROD_HOST_KEY" | awk '{print $1" "$2}')"
+          printf '%s %s\n' "$PROD_HOST" "$HOST_KEY" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Crear directorio del release
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            "$PROD_USER@$PROD_HOST" \
+            "mkdir -p /opt/aprendewebgt/releases/$RELEASE_NAME"
+
+      - name: Subir backend
+        run: |
+          scp \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            backend-release.tar.gz \
+            "$PROD_USER@$PROD_HOST:/opt/aprendewebgt/releases/$RELEASE_NAME/backend-release.tar.gz"
+
+      - name: Instalar y activar release
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            "$PROD_USER@$PROD_HOST" "
+              set -e
+
+              cd /opt/aprendewebgt/releases/$RELEASE_NAME
+
+              tar -xzf backend-release.tar.gz
+              rm backend-release.tar.gz
+
+              /usr/local/bin/npm ci --omit=dev
+
+              sudo /usr/local/sbin/aprendewebgt-activate $RELEASE_NAME
+            "
+
+      - name: Verificar producción
+        run: |
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 5 \
+            --retry-delay 2 \
+            https://aprendewebgt.lat/api/health

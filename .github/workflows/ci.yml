@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar lint
+        run: npm run lint
+
+      - name: Compilar frontend
+        run: npm run build
+
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    # Base de datos temporal exclusiva para CI
+    services:
+      mariadb:
+        image: mariadb:11.4
+
+        env:
+          MARIADB_ROOT_PASSWORD: ci_root_password
+          MARIADB_DATABASE: plataforma_uvg_test
+          MARIADB_USER: plataforma_app
+          MARIADB_PASSWORD: ci_db_password
+
+        ports:
+          - 3306:3306
+
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    # Variables que utilizará nuestro backend durante npm test
+    env:
+      NODE_ENV: test
+
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: plataforma_app
+      DB_PASSWORD: ci_db_password
+      DB_NAME: plataforma_uvg_test
+
+      JWT_SECRET: ci_jwt_secret_solo_para_pruebas
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar cliente de MariaDB
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+
+      - name: Importar esquema de base de datos
+        run: |
+          mariadb \
+            --host="$DB_HOST" \
+            --port="$DB_PORT" \
+            --user="$DB_USER" \
+            --password="$DB_PASSWORD" \
+            "$DB_NAME" < database/schema.sql
+
+      - name: Revisar sintaxis
+        run: npm run check
+
+      - name: Ejecutar pruebas
+        run: npm test
