@@ -240,11 +240,11 @@ after(async () => {
     await pool.query(`
         DELETE FROM usuarios
         WHERE username LIKE 'supertest%'
-           OR username LIKE 'login_test%'
-           OR username LIKE 'perfil_test%'
-           OR username LIKE 'logout_test%'
-           OR username LIKE 'otro_test%'
-           OR username LIKE 'test%'
+            OR username LIKE 'login_test%'
+            OR username LIKE 'perfil_test%'
+            OR username LIKE 'logout_test%'
+            OR username LIKE 'otro_test%'
+            OR username LIKE 'test%'
     `);
 
     await pool.end();
