@@ -19,6 +19,7 @@ export async function obtenerUsuarios() {
     return rows;
 }
 
+
 export async function registrarUsuario({ username, nombre, correo, password }) {
     const psswHash = await bcrypt.hash(password, 10);
 
@@ -28,6 +29,7 @@ export async function registrarUsuario({ username, nombre, correo, password }) {
 
     return { id: resultado.insertId, username, nombre, correo };
 }
+
 
 export async function loginUsuario(identificador, password) {
     const usuario = await buscarPorCorreo(identificador);
@@ -55,6 +57,7 @@ export async function loginUsuario(identificador, password) {
     return { usuario: usuarioSinPassword, token };
 }
 
+
 export async function obtenerPerfil(id) {
     const [resultado] = await pool.query(
         'SELECT id, username, nombre, correo, rol, creado_en FROM usuarios WHERE id = ? LIMIT 1', [id]
@@ -63,4 +66,26 @@ export async function obtenerPerfil(id) {
 
 }
 
+export async function olvidoContraseña(identificador) {
+    const usuario = await buscarPorCorreo(identificador);
 
+    if (!usuario) {
+        throw new Error('CREDENCIALES_INVALIDAS');
+    }
+
+    const token = jwt.sign(
+        { sub: usuario.id, purpose: "password_reset" },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: '10m',
+            algorithm: 'HS256'
+        }
+    );
+
+    const enlace = `https://aprendewebgt.lat/usuarios/reset-password/${token}`;
+    ///enviar correo 
+}
+
+export async function enviarCorreoRecuperacion(correo, enlace) {
+
+}

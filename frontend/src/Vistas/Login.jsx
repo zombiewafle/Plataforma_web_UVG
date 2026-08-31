@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 function Login() {
     const [identificador, setIdentificador] = useState('');
@@ -6,11 +7,13 @@ function Login() {
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL;
+    const navigate = useNavigate();
 
     async function handleSubmit(e) {
         e.preventDefault();
         setError('');
         setCargando(true);
+
 
         try {
             const respuesta = await fetch(`${API_URL}/usuarios/login`, {
@@ -22,13 +25,15 @@ function Login() {
                 }),
             });
 
+
             const datos = await respuesta.json();
 
             if (!respuesta.ok) {
                 throw new Error(datos.error || 'Credenciales Incorrectas');
             }
 
-            // localStorage.setItem('token', datos.token);
+            navigate('/home', { replace: true })
+
 
         } catch (error) {
             setError(error.message);
@@ -37,6 +42,8 @@ function Login() {
             setCargando(false);
         }
     }
+
+
 
     return (
         <div className='w-screen flex flex-col items-center justify-center h-screen gap-5'>
@@ -62,8 +69,8 @@ function Login() {
                 </button>
 
             </form>
-            <a href="#" className="text-sm text-emerald-600 hover:underline font-bold">¿Olvidaste tu contraseña?</a>
-            <a href="#" className="text-sm text-emerald-600 hover:underline font-bold">¿No tienes una cuenta? Registrate</a>
+            <a href="/olvido_contraseña" className="text-sm text-emerald-600 hover:underline font-bold">¿Olvidaste tu contraseña?</a>
+            <a href="/registro" className="text-sm text-emerald-600 hover:underline font-bold">¿No tienes una cuenta? Registrate</a>
 
         </div >
     );
