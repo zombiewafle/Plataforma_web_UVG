@@ -83,6 +83,11 @@ export async function obtenerPerfil(req, res) {
     }
 };
 
+export async function olvido_contraseña(req, res) {
+    const id = req.usuario.identificador;
+    t
+};
+
 export async function logout(req, res) {
     res.clearCookie('token', {
         httpOnly: true,
@@ -94,5 +99,4 @@ export async function logout(req, res) {
         mensaje: 'Sesión cerrada correctamente'
     })
 };
-
 

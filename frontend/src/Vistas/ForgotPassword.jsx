@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Link } from "react-router";
+import { useEffect } from "react";
+
 
 function OlvidoContraseña() {
+    useEffect(() => {
+        document.title = "Reinicio de Contraseña | Aprende Web GT";
+    }, []);
+
     const [identificador, setIdentificador] = useState('');
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);

@@ -6,7 +6,9 @@ import Home from "../Vistas/Home";
 import OlvidoContraseña from "../Vistas/ForgotPassword";
 import { createBrowserRouter, Navigate } from "react-router";
 
+
 const router = createBrowserRouter([
+
     {
         path: "/",
         element: <Navigate to="/login" replace />,

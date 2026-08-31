@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Link } from "react-router";
+import { useEffect } from "react";
 
 function Register() {
+    useEffect(() => {
+        document.title = "Registro | Aprende Web GT";
+    }, []);
+
     const [username, setUsername] = useState('');
     const [nombre, setNombre] = useState('');
     const [correo, setCorreo] = useState('');
@@ -11,6 +16,7 @@ function Register() {
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL;
+
 
     const navigate = useNavigate();
 

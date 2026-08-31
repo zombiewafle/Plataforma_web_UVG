@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useEffect } from "react";
 
 function Login() {
+    useEffect(() => {
+        document.title = "Login | Aprende Web GT";
+    }, []);
+
     const [identificador, setIdentificador] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -13,6 +18,7 @@ function Login() {
         e.preventDefault();
         setError('');
         setCargando(true);
+
 
 
         try {
