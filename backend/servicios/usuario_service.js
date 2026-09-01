@@ -66,6 +66,10 @@ export async function obtenerPerfil(id) {
 
 }
 
+
+// PENDIENTE MIENTRAS RESEND REVISA LA CONFIGURACION
+// //
+
 export async function olvidoContraseña(identificador) {
     const usuario = await buscarPorCorreo(identificador);
 

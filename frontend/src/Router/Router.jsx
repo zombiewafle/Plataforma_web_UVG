@@ -4,14 +4,15 @@ import Login from "../Vistas/Login";
 import Registro from "../Vistas/Register"
 import Home from "../Vistas/Home";
 import OlvidoContraseña from "../Vistas/ForgotPassword";
-import { createBrowserRouter, Navigate } from "react-router";
-
+import { createBrowserRouter } from "react-router";
+import VerificarSesion from "../Componentes/VerificarSesion";
+import RutaProtegida from "../Componentes/RutaProtegida";
 
 const router = createBrowserRouter([
 
     {
         path: "/",
-        element: <Navigate to="/login" replace />,
+        element: <VerificarSesion />,
     },
     {
         element: <AuthLayout />,
@@ -31,11 +32,16 @@ const router = createBrowserRouter([
         ],
     },
     {
-        element: <RootLayout />,
+        element: <RutaProtegida />,
         children: [
             {
-                path: "/home",
-                element: <Home />,
+                element: <RootLayout />,
+                children: [
+                    {
+                        path: "/home",
+                        element: <Home />,
+                    }
+                ]
             },
         ],
     },
