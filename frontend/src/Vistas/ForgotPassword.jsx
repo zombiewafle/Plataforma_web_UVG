@@ -9,7 +9,7 @@ function OlvidoContraseña() {
         document.title = "Reinicio de Contraseña | Aprende Web GT";
     }, []);
 
-    const [identificador, setIdentificador] = useState('');
+    const [correo, setIdentificador] = useState('');
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL;
@@ -21,11 +21,11 @@ function OlvidoContraseña() {
         setCargando(true);
 
         try {
-            const respuesta = await fetch(`${API_URL}/usuarios/olvido_contraseña`, {
+            const respuesta = await fetch(`${API_URL}/usuarios/olvido-contrasena`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    identificador: identificador
+                    correo: correo
                 }),
             });
 
@@ -54,7 +54,7 @@ function OlvidoContraseña() {
             )}
 
             <form onSubmit={handleSubmit} className="w-80 gap-5 items-center justify-center flex flex-col">
-                <input id="identificador" value={identificador} onChange={(e) => setIdentificador(e.target.value)} type="text" autoComplete="on" placeholder="Correo Electrónico  / Usuario" className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-md"></input>
+                <input id="correo" value={correo} onChange={(e) => setIdentificador(e.target.value)} type="text" autoComplete="on" placeholder="Correo Electrónico  / Usuario" className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-md"></input>
 
                 <button type="submit" disabled={cargando} className="shadow-md bg-green-600 text-white font-medium px-4 py-2 rounded-md hover:bg-green-700 cursor-pointer">{cargando ? 'Cargando...' : 'Enviar'}</button>
                 <Link to="/login" type="button" className="border-2 border-green-600 text-green-600 font-medium px-4 py-2 rounded-md hover:bg-green-700 hover:text-white cursor-pointer">Regresar</Link>

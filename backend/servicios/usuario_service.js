@@ -1,6 +1,11 @@
 import pool from '../config/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { Resend } from 'resend';
+import crypto from 'crypto';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 //FUNCIONES AUXILIARES PARA LOS USUARIOS 
 async function buscarPorCorreo(identificador_de_usuario) {
@@ -67,29 +72,96 @@ export async function obtenerPerfil(id) {
 }
 
 
-// PENDIENTE MIENTRAS RESEND REVISA LA CONFIGURACION
-// //
-
-export async function olvidoContraseña(identificador) {
-    const usuario = await buscarPorCorreo(identificador);
+export async function olvidoContraseñaToken(correo) {
+    const usuario = await buscarPorCorreo(correo);
 
     if (!usuario) {
-        throw new Error('CREDENCIALES_INVALIDAS');
+        return { message: "Si el correo existe, se enviará un enlace de recuperación." };
     }
 
-    const token = jwt.sign(
-        { sub: usuario.id, purpose: "password_reset" },
-        process.env.JWT_SECRET,
-        {
-            expiresIn: '10m',
-            algorithm: 'HS256'
-        }
+    const randToken = crypto.randomBytes(32).toString('hex');
+    const randTokenHash = crypto.createHash('sha256').update(randToken).digest('hex');
+    const expiresIn = new Date(Date.now() + 10 * 60 * 1000);
+
+    await pool.query(
+        'INSERT INTO password_reset_tokens (usuario_id, token_hash, expira_en) VALUES (?, ?, ?)',
+        [usuario.id, randTokenHash, expiresIn]
     );
 
-    const enlace = `https://aprendewebgt.lat/usuarios/reset-password/${token}`;
-    ///enviar correo 
+    const enlace = `${process.env.FRONTEND_URL}/reset-password?token=${randToken}`;
+
+    try {
+        await resend.emails.send({
+            from: "AprendeWebGT <no-reply@aprendewebgt.lat>",
+            to: correo,
+            subject: 'Restablecer contraseña',
+            html: `Haz clic <a href="${enlace}">aquí</a> para restablecer tu contraseña. Este enlace expira en 10 minutos.`
+        });
+
+        return {
+            message: "Si el correo existe, se enviará un enlace de recuperación."
+        };
+
+    } catch (error) {
+        console.error('Error al enviar el correo: ', error);
+    }
+
 }
 
-export async function enviarCorreoRecuperacion(correo, enlace) {
+export async function restablecerContraseña(tokenCrudo, nuevaPassword) {
 
+    const tokenHash = crypto.createHash('sha256').update(tokenCrudo).digest('hex');
+
+    const [revision] = await pool.query(
+        `SELECT usuario_id FROM password_reset_tokens WHERE token_hash = ? AND usado_en IS NULL AND expira_en > NOW() LIMIT 1`,
+        [tokenHash]
+    );
+
+    if (!revision[0]) {
+        throw new Error('TOKEN_INVALIDO');
+    }
+
+    const usuarioId = revision[0].usuario_id;
+    const connection = await pool.getConnection();
+    const nuevaPasswordHash = await bcrypt.hash(nuevaPassword, 10);
+
+    try {
+        await connection.beginTransaction();
+
+        const [usuarios] = await connection.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [usuarioId]);
+
+        if (!usuarios[0]) {
+            throw new Error('TOKEN_INVALIDO');
+        }
+
+        const [tokens] = await connection.query(`SELECT id, usuario_id FROM password_reset_tokens WHERE token_hash = ? AND usuario_id = ? AND usado_en IS NULL AND expira_en > NOW() LIMIT 1 FOR UPDATE`,
+            [tokenHash, usuarioId]
+        );
+
+        if (!tokens[0]) {
+            throw new Error('TOKEN_INVALIDO');
+        }
+
+        await connection.query(`UPDATE usuarios SET password_hash = ? WHERE id = ?`,
+            [nuevaPasswordHash, usuarioId]
+        );
+        await connection.query(`UPDATE password_reset_tokens SET usado_en = NOW() WHERE usuario_id = ? AND usado_en IS NULL`,
+            [usuarioId]
+        );
+
+        await connection.commit();
+
+        return {
+            message: 'Contraseña actualizada correctamente.'
+        };
+
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+
+    } finally {
+        connection.release();
+    }
 }
+
+
