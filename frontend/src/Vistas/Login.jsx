@@ -73,7 +73,7 @@ function Login() {
                 </button>
 
             </form>
-            <a href="/olvido_contraseña" className="text-sm text-emerald-600 hover:underline font-bold">¿Olvidaste tu contraseña?</a>
+            <a href="/olvido-contrasena" className="text-sm text-emerald-600 hover:underline font-bold">¿Olvidaste tu contraseña?</a>
             <a href="/registro" className="text-sm text-emerald-600 hover:underline font-bold">¿No tienes una cuenta? Registrate</a>
 
         </div >
