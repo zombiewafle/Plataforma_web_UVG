@@ -89,12 +89,7 @@ export async function olvidoContraseñaToken(correo) {
     const enlace = `${process.env.FRONTEND_URL}/restablecer-contrasena?token=${randToken}`;
 
     try {
-        await await correoService.enviarRestablecimiento({
-            from: "AprendeWebGT <no-reply@aprendewebgt.lat>",
-            to: correo,
-            subject: 'Restablecer contraseña',
-            html: `Haz clic <a href="${enlace}">aquí</a> para restablecer tu contraseña. Este enlace expira en 10 minutos.`
-        });
+        await correoService.enviarRestablecimiento(correo, enlace);
 
         return {
             message: "Si el correo existe, se enviará un enlace de recuperación."
