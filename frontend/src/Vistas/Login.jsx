@@ -1,10 +1,17 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
+import { useEffect } from "react";
 
 function Login() {
+    useEffect(() => {
+        document.title = "Login | Aprende Web GT";
+    }, []);
+
     const [identificador, setIdentificador] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
+    const navigate = useNavigate();
     const API_URL = import.meta.env.VITE_API_URL;
 
     async function handleSubmit(e) {
@@ -22,13 +29,15 @@ function Login() {
                 }),
             });
 
+
             const datos = await respuesta.json();
 
             if (!respuesta.ok) {
                 throw new Error(datos.error || 'Credenciales Incorrectas');
             }
 
-            // localStorage.setItem('token', datos.token);
+            navigate('/home', { replace: true })
+
 
         } catch (error) {
             setError(error.message);
@@ -37,6 +46,8 @@ function Login() {
             setCargando(false);
         }
     }
+
+
 
     return (
         <div className='w-screen flex flex-col items-center justify-center h-screen gap-5'>
@@ -62,8 +73,8 @@ function Login() {
                 </button>
 
             </form>
-            <a href="#" className="text-sm text-emerald-600 hover:underline font-bold">¿Olvidaste tu contraseña?</a>
-            <a href="#" className="text-sm text-emerald-600 hover:underline font-bold">¿No tienes una cuenta? Registrate</a>
+            <a href="/olvido_contraseña" className="text-sm text-emerald-600 hover:underline font-bold">¿Olvidaste tu contraseña?</a>
+            <a href="/registro" className="text-sm text-emerald-600 hover:underline font-bold">¿No tienes una cuenta? Registrate</a>
 
         </div >
     );

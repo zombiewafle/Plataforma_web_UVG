@@ -83,6 +83,7 @@ export async function obtenerPerfil(req, res) {
     }
 };
 
+
 export async function logout(req, res) {
     res.clearCookie('token', {
         httpOnly: true,
@@ -96,3 +97,49 @@ export async function logout(req, res) {
 };
 
 
+export async function olvido_contraseña(req, res) {
+    const { correo } = req.body;
+
+    if (!correo) {
+        return res.status(400).json({ error: "El correo es requerido" });
+    }
+
+    try {
+        await usuarioService.olvidoContraseñaToken(correo);
+        return res.status(200).json({ message: "Si el correo existe, se enviará un enlace de recuperación." });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+};
+
+export async function restablecerContraseña(req, res) {
+    const { tokenCrudo, nuevaPassword, confirmarPassword } = req.body;
+
+    if (!nuevaPassword || !confirmarPassword) {
+        return res.status(400).json({ error: "Faltan campos requeridos" });
+    }
+
+
+    if (nuevaPassword !== confirmarPassword) {
+        return res.status(422).json({ error: "Ambos campos deben ser iguales" });
+    }
+
+    try {
+        await usuarioService.restablecerContraseña(tokenCrudo, nuevaPassword)
+        return res.status(200).json({ message: "Contraseña actualizada correctamente." });
+
+
+    } catch (error) {
+
+        if (error.message === 'TOKEN_INVALIDO') {
+            return res.status(400).json({
+                error: "El enlace es inválido o ha expirado"
+            });
+        }
+
+        console.error(error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+}
