@@ -1,10 +1,8 @@
 import pool from '../config/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { Resend } from 'resend';
 import crypto from 'crypto';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { correoService } from './correo_service.js';
 
 
 //FUNCIONES AUXILIARES PARA LOS USUARIOS 
@@ -88,10 +86,10 @@ export async function olvidoContraseñaToken(correo) {
         [usuario.id, randTokenHash, expiresIn]
     );
 
-    const enlace = `${process.env.FRONTEND_URL}/reset-password?token=${randToken}`;
+    const enlace = `${process.env.FRONTEND_URL}/restablecer-contrasena?token=${randToken}`;
 
     try {
-        await resend.emails.send({
+        await correoService.emails.send({
             from: "AprendeWebGT <no-reply@aprendewebgt.lat>",
             to: correo,
             subject: 'Restablecer contraseña',

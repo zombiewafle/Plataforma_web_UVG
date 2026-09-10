@@ -7,6 +7,7 @@ import OlvidoContraseña from "../Vistas/ForgotPassword";
 import { createBrowserRouter } from "react-router";
 import VerificarSesion from "../Componentes/VerificarSesion";
 import RutaProtegida from "../Componentes/RutaProtegida";
+import ResetPassword from "../Vistas/ResetPassword";
 
 const router = createBrowserRouter([
 
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
             {
                 path: "/olvido_contraseña",
                 element: <OlvidoContraseña />,
+            },
+            {
+                path: "/restablecer-contrasena",
+                element: <ResetPassword />,
             },
         ],
     },

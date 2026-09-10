@@ -100,11 +100,9 @@ export async function logout(req, res) {
 export async function olvido_contraseña(req, res) {
     const { correo } = req.body;
 
-
     if (!correo) {
         return res.status(400).json({ error: "El correo es requerido" });
     }
-
 
     try {
         await usuarioService.olvidoContraseñaToken(correo);

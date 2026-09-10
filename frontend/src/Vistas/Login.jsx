@@ -11,15 +11,13 @@ function Login() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
-    const API_URL = import.meta.env.VITE_API_URL;
     const navigate = useNavigate();
+    const API_URL = import.meta.env.VITE_API_URL;
 
     async function handleSubmit(e) {
         e.preventDefault();
         setError('');
         setCargando(true);
-
-
 
         try {
             const respuesta = await fetch(`${API_URL}/usuarios/login`, {

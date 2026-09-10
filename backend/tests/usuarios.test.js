@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import pool from '../config/db.js';
 import app from '../app.js';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { correoService } from '../servicios/correo_service.js';
 
 
 // Tests para el registro de usuarios
@@ -249,3 +252,197 @@ after(async () => {
 
     await pool.end();
 });
+
+describe('POST /api/usuarios/olvido-contrasena', () => {
+    let usuario;
+    before(async () => {
+        const id = Date.now();
+
+        usuario = {
+            username: `perfil_test${id}`,
+            nombre: 'Usuario Perfil Test',
+            correo: `perfil_test${id}@test.com`,
+            password: '123456'
+        };
+
+        const registro = await request(app)
+            .post('/api/usuarios/registro')
+            .send(usuario);
+
+        assert.strictEqual(registro.status, 201);
+    });
+
+    it('deberia devolver 200 si existe un correo en la base de datos', async (t) => {
+        const agente = request.agent(app);
+        const envioMock = t.mock.method(
+            correoService,
+            'enviarRestablecimiento',
+            async () => {
+                return { id: 'correo-falso-test' };
+            }
+        );
+
+        const respuesta = await agente
+            .post('/api/usuarios/olvido-contrasena')
+            .send({
+                correo: usuario.correo
+            });
+
+        assert.strictEqual(respuesta.status, 200);
+    });
+
+    it('deberia devolver 400 si no se llenan todos los campos', async () => {
+        const agente = request.agent(app);
+        const respuesta = await agente
+            .post('/api/usuarios/olvido-contrasena')
+            .send({
+            })
+        assert.strictEqual(respuesta.status, 400);
+    });
+
+})
+
+describe('POST /api/usuarios/restablecer-contrasena', () => {
+    let usuario;
+    before(async () => {
+        const id = Date.now();
+
+        usuario = {
+            username: `perfil_test${id}`,
+            nombre: 'Usuario Perfil Test',
+            correo: `perfil_test${id}@test.com`,
+            password: '123456'
+        };
+
+        const registro = await request(app)
+            .post('/api/usuarios/registro')
+            .send(usuario);
+
+        assert.strictEqual(registro.status, 201);
+    });
+
+    it('deberia debolver 200 si la contrasena se cambia correctamente', async () => {
+        const agente = request.agent(app)
+        const tokenCrudo = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(tokenCrudo).digest('hex');
+
+
+        const [usuarios] = await pool.query(
+            'SELECT id FROM usuarios WHERE correo = ?',
+            [usuario.correo]
+        );
+
+        const usuarioId = usuarios[0].id;
+        const expiraEn = new Date(Date.now() + 10 * 60 * 1000);
+
+        await pool.query(
+            `INSERT INTO password_reset_tokens (usuario_id, token_hash, expira_en) VALUES (?, ?, ?)`,
+            [usuarioId, tokenHash, expiraEn]
+        );
+
+        const respuesta = await agente
+            .post('/api/usuarios/restablecer-contrasena')
+            .send({
+                tokenCrudo,
+                nuevaPassword: "654321",
+                confirmarPassword: "654321"
+            });
+
+        assert.strictEqual(respuesta.status, 200);
+
+        const [verificacion1] = await pool.query(
+            'SELECT password_hash FROM usuarios WHERE id = ?',
+            [usuarioId]
+        )
+
+        let ver = await bcrypt.compare("654321", verificacion1[0].password_hash)
+
+        if (ver) {
+            assert.strictEqual(ver, true);
+        } else {
+            assert.strictEqual(ver, false);
+        }
+
+        const [verificacion2] = await pool.query(
+            'SELECT usado_en FROM password_reset_tokens WHERE token_hash = ?',
+            [tokenHash]
+        )
+
+        assert.ok(verificacion2[0].usado_en);
+
+    });
+
+    it('deberia devolver 400 si faltan campos requeridos', async () => {
+        const agente = request.agent(app)
+        const tokenCrudo = crypto.randomBytes(32).toString('hex');
+
+        const respuesta = await agente
+            .post('/api/usuarios/restablecer-contrasena')
+            .send({
+                tokenCrudo,
+                nuevaPassword: "654321"
+            });
+        assert.strictEqual(respuesta.status, 400);
+        assert.strictEqual(respuesta.body.error, 'Faltan campos requeridos');
+    });
+
+    it('deberia devolver 422 si ambos campos no son iguales', async () => {
+        const agente = request.agent(app)
+        const tokenCrudo = crypto.randomBytes(32).toString('hex');
+
+        const respuesta = await agente
+            .post('/api/usuarios/restablecer-contrasena')
+            .send({
+                tokenCrudo,
+                nuevaPassword: "654321",
+                confirmarPassword: "65432"
+            });
+        assert.strictEqual(respuesta.status, 422);
+        assert.strictEqual(respuesta.body.error, 'Ambos campos deben ser iguales');
+    });
+
+    it('deberia devolver 400 si el token es invalido', async () => {
+        const agente = request.agent(app)
+        const tokenCrudo = crypto.randomBytes(32).toString('hex');
+
+        const respuesta = await agente
+            .post('/api/usuarios/restablecer-contrasena')
+            .send({
+                tokenCrudo,
+                nuevaPassword: "654321",
+                confirmarPassword: "654321"
+            });
+        assert.strictEqual(respuesta.status, 400);
+        assert.strictEqual(respuesta.body.error, 'El enlace es inválido o ha expirado');
+    });
+
+    it('deberia devolver 400 si el token ha expirado', async () => {
+        const agente = request.agent(app)
+        const tokenCrudo = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(tokenCrudo).digest('hex');
+
+        const [usuarios] = await pool.query(
+            'SELECT id FROM usuarios WHERE correo = ?',
+            [usuario.correo]
+        );
+
+        const usuarioId = usuarios[0].id;
+        const expiraEn = new Date(Date.now() - 10 * 60 * 1000);
+
+        await pool.query(
+            `INSERT INTO password_reset_tokens (usuario_id, token_hash, expira_en) VALUES (?, ?, ?)`,
+            [usuarioId, tokenHash, expiraEn]
+        );
+
+        const respuesta = await agente
+            .post('/api/usuarios/restablecer-contrasena')
+            .send({
+                tokenCrudo,
+                nuevaPassword: "654321",
+                confirmarPassword: "654321"
+            });
+        assert.strictEqual(respuesta.status, 400);
+        assert.strictEqual(respuesta.body.error, 'El enlace es inválido o ha expirado');
+    });
+
+})
