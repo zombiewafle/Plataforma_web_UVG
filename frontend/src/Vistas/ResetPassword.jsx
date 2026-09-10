@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router";
 import { useEffect } from "react";
-import OlvidoContraseña from "./ForgotPassword";
 
-function resetPassword() {
+function ResetPassword() {
     useEffect(() => {
         document.title = "Reseteo de Contraseñas | Aprende Web GT";
     }, []);
@@ -78,4 +77,4 @@ function resetPassword() {
 
 }
 
-export default resetPassword;
+export default ResetPassword;
