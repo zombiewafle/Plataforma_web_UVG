@@ -27,7 +27,7 @@ const router = createBrowserRouter([
                 element: <Registro />,
             },
             {
-                path: "/olvido_contraseña",
+                path: "/olvido-contrasena",
                 element: <OlvidoContraseña />,
             },
             {
