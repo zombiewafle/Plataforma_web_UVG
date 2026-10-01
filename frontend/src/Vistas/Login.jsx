@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 function Login() {
     useEffect(() => {
-        document.title = "Login | Aprende Web GT";
+        document.title = "Inicio de Sesión | Aprende Web GT";
     }, []);
 
     const [identificador, setIdentificador] = useState('');
@@ -54,7 +54,7 @@ function Login() {
     return (
         <div className='w-screen flex flex-col items-center justify-center h-screen gap-5'>
 
-            <h1 className="font-bold text-4xl">Login</h1>
+            <h1 className="font-bold text-4xl">Inicio de Sesión</h1>
 
             {error && (
                 <div className="bg-red-100 text-red-700 px-4 py-2 rounded-lg border border-red-300 text-sm max-w-xs text-center">
