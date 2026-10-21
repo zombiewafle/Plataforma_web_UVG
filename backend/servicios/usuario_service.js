@@ -45,7 +45,10 @@ export async function loginUsuario(identificador, password) {
     }
 
     const token = jwt.sign(
-        { id: usuario.id, rol: usuario.rol },
+        {
+            id: usuario.id,
+            rol: usuario.rol
+        },
         process.env.JWT_SECRET,
         {
             expiresIn: '7d',
@@ -67,8 +70,6 @@ export async function obtenerPerfil(id) {
 }
 
 
-// PENDIENTE MIENTRAS RESEND REVISA LA CONFIGURACION
-// //
 
 export async function olvidoContraseña(identificador) {
     const usuario = await buscarPorCorreo(identificador);
@@ -90,6 +91,36 @@ export async function olvidoContraseña(identificador) {
     ///enviar correo 
 }
 
-export async function enviarCorreoRecuperacion(correo, enlace) {
+export async function obtenerDatosPerfil(id) {
+    const [usuario] = await pool.query(
+        'SELECT username, nombre, correo, rol FROM usuarios WHERE id = ? LIMIT 1', [id]
+    );
+    return usuario[0];
+}
 
+export async function cambiarDatosPerfil(id, { nombre, correo }) {
+    const campos = [];
+    const valores = [];
+
+    if (nombre !== undefined) {
+        campos.push('nombre = ?');
+        valores.push(nombre);
+    }
+
+    if (correo !== undefined) {
+        campos.push('correo = ?');
+        valores.push(correo);
+    }
+
+    if (campos.length === 0) {
+        throw new Error('SIN_DATOS');
+    }
+
+    valores.push(id);
+
+    await pool.query(
+        `UPDATE usuarios SET ${campos.join(', ')} WHERE id = ?`, valores
+    );
+
+    return await obtenerDatosPerfil(id);
 }

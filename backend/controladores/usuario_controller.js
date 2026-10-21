@@ -84,8 +84,20 @@ export async function obtenerPerfil(req, res) {
 };
 
 export async function olvido_contraseña(req, res) {
-    const id = req.usuario.identificador;
-    t
+    const { correo } = req.body;
+
+    if (!correo) {
+        return res.status(400).json({ error: "El correo es requerido" });
+    }
+
+    try {
+        await usuarioService.olvidoContraseñaToken(correo);
+        return res.status(200).json({ message: "Si el correo existe, se enviará un enlace de recuperación." });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
 };
 
 export async function logout(req, res) {
@@ -100,3 +112,34 @@ export async function logout(req, res) {
     })
 };
 
+export async function obtenerDatosPerfil(req, res) {
+    try {
+        const id = req.usuario.id;
+        const resultado = await usuarioService.obtenerDatosPerfil(id);
+        if (!resultado) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+        return res.status(200).json(resultado)
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+}
+
+export async function cambiarDatosPerfil(req, res) {
+    try {
+        const id = req.usuario.id;
+        const { nombre, correo } = req.body;
+
+        if (nombre === undefined && correo === undefined) {
+            return res.status(404).json({ error: "No se enviaron datos para actualizar" });
+        }
+        const resultado = await usuarioService.cambiarDatosPerfil(id, { nombre, correo });
+        return res.status(200).json(resultado);
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+}
