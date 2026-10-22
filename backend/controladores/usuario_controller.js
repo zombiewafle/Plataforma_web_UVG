@@ -135,6 +135,13 @@ export async function cambiarDatosPerfil(req, res) {
         if (nombre === undefined && correo === undefined) {
             return res.status(404).json({ error: "No se enviaron datos para actualizar" });
         }
+
+        if (correo !== undefined && correo.trim() === '') {
+            return res.status(400).json({
+                error: "El correo no puede estar vacío"
+            });
+        }
+
         const resultado = await usuarioService.cambiarDatosPerfil(id, { nombre, correo });
         return res.status(200).json(resultado);
     }
