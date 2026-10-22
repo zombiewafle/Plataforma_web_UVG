@@ -171,8 +171,10 @@ describe('GET /api/usuarios/perfil', () => {
             .get('/api/usuarios/perfil');
 
         assert.strictEqual(respuesta.status, 200);
-        assert.ok(respuesta.body.id);
+        assert.strictEqual(respuesta.body.username, usuario.username);
         assert.strictEqual(respuesta.body.nombre, 'Usuario Perfil Test');
+        assert.strictEqual(respuesta.body.correo, usuario.correo);
+        assert.strictEqual(respuesta.body.rol, 'estudiante');
     });
 
     it('debería devolver 401 si se solicita el perfil sin sesión', async () => {
