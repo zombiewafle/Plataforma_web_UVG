@@ -16,6 +16,34 @@ function Perfil() {
 
     // const navigate = useNavigate();
 
+    async function showProfile() {
+        try {
+            const respuesta = await fetch(`${API_URL}/usuarios/perfil`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    nombre: nombre,
+                    correo: correo
+                })
+            });
+
+            const datos = await respuesta.json();
+            if (!respuesta.ok) {
+                throw new Error(datos.error || "No se pudo obtener los datos del perfil");
+            }
+
+        }
+        catch (error) {
+            setError(error.message);
+
+        } finally {
+            setCargando(false);
+        }
+    }
+
     async function handleSubmit(e) {
         e.preventDefault();
         setError('');
