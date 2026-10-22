@@ -99,72 +99,102 @@ function Perfil() {
     }
 
     return (
-        <div className="flex flex-col items-center gap-5 py-10">
-            <h1 className="font-bold text-4xl">Perfil</h1>
+        <div className="flex justify-center py-12 px-4">
 
-            {error && (
-                <div className="bg-red-100 text-red-700 px-4 py-2 rounded-lg border border-red-300 text-sm max-w-xs text-center">
-                    {error}
+            <div className="w-full max-w-md flex flex-col gap-6">
+
+                <h1 className="text-4xl font-bold">
+                    Perfil
+                </h1>
+
+                {error && (
+                    <div className="bg-red-50 text-red-700 px-4 py-3 rounded-md border border-red-200 text-sm">
+                        {error}
+                    </div>
+                )}
+
+                <div className="flex flex-col gap-4">
+                    <div>
+                        <p className="text-sm text-gray-400">
+                            Nombre
+                        </p>
+                        <p className="font-medium">
+                            {dNombre}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p className="text-sm text-gray-400">
+                            Correo
+                        </p>
+                        <p className="font-medium">
+                            {dcorreo}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p className="text-sm text-gray-400">
+                            Rol
+                        </p>
+                        <p className="font-medium capitalize">
+                            {drol}
+                        </p>
+                    </div>
                 </div>
-            )}
 
-            <div className="flex flex-col items-left gap-5">
-                <ul>
-                    <li>Nombre: {dNombre}</li>
-                    <li>Correo: {dcorreo}</li>
-                    <li>Rol: {drol}</li>
-                </ul>
-            </div>
-
-            {
-                !editando ? (
+                {!editando ? (
                     <button
                         type="button"
                         onClick={() => setEditando(true)}
+                        className="self-start px-4 py-2 rounded-md border border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
                     >
                         Editar perfil
                     </button>
                 ) : (
                     <form
                         onSubmit={handleSubmit}
-                        className="flex flex-col gap-4 w-80"
+                        className="flex flex-col gap-4 w-full"
                     >
                         <input
                             type="text"
                             value={nombre}
                             onChange={(e) => setNombre(e.target.value)}
-                            placeholder="Nombre"
-                            className="border rounded-md px-4 py-2"
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
 
                         <input
                             type="email"
                             value={correo}
                             onChange={(e) => setCorreo(e.target.value)}
-                            placeholder="Correo"
-                            className="border rounded-md px-4 py-2"
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
 
-                        <div className="flex gap-4">
+                        <div className="flex gap-3">
                             <button
                                 type="submit"
                                 disabled={cargando}
+                                className="flex-1 bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
                             >
                                 {cargando ? "Guardando..." : "Guardar cambios"}
                             </button>
 
                             <button
                                 type="button"
-                                onClick={() => setEditando(false)}
+                                onClick={() => {
+                                    setNombre(dNombre);
+                                    setCorreo(dcorreo);
+                                    setEditando(false);
+                                }}
+                                className="flex-1 border border-gray-300 text-gray-300 py-2 rounded-md hover:bg-gray-700"
                             >
                                 Cancelar
                             </button>
                         </div>
                     </form>
-                )
-            }
+                )}
 
-        </div >
+            </div>
+        </div>
     );
 }
 
