@@ -2,6 +2,7 @@
 import express from "express";
 import cookieParser from 'cookie-parser';
 import usuarioRouter from "./rutas/usuario_route.js";
+import Homerouter from "./rutas/home_route.js";
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/usuarios', usuarioRouter);
+app.use('/api/home', Homerouter);
 
 export default app;
 

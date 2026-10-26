@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { cambiarDatosPerfil, loginUsuario, logout, obtenerDatosPerfil, obtenerUsuarios, registrarUsuario } from '../controladores/usuario_controller.js';
+import { olvido_contraseña, cambiarDatosPerfil, loginUsuario, logout, obtenerDatosPerfil, obtenerUsuarios, registrarUsuario } from '../controladores/usuario_controller.js';
 import { autenticar } from '../middleware/autenticacion.js';
 import { obtenerPerfil } from '../controladores/usuario_controller.js';
 import { verificarToken } from '../middleware/autenticacion.js';
-import { olvido_contraseña } from '../controladores/usuario_controller.js';
 
 
 const router = Router();
