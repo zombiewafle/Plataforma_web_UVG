@@ -52,9 +52,7 @@ export async function loginUsuario(req, res) {
             path: '/'
         });
 
-        return res.status(200).json({
-            usuario: resultado.usuario
-        });
+        return res.status(200).json({ usuario: resultado.usuario });
 
     } catch (error) {
         if (error.message === 'CREDENCIALES_INVALIDAS') {
@@ -62,7 +60,7 @@ export async function loginUsuario(req, res) {
         }
 
         console.error(error);
-        res.status(500).json({ error: 'Error al iniciar sesión' });
+        return res.status(500).json({ error: 'Error al iniciar sesión' });
     }
 };
 
@@ -78,7 +76,7 @@ export async function obtenerPerfil(req, res) {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Error al obtener el perfil" });
+        return res.status(500).json({ error: "Error al obtener el perfil" });
 
     }
 };
@@ -107,9 +105,7 @@ export async function logout(req, res) {
         sameSite: 'lax',
         path: '/'
     });
-    return res.status(200).json({
-        mensaje: 'Sesión cerrada correctamente'
-    })
+    return res.status(200).json({ mensaje: 'Sesión cerrada correctamente' })
 };
 
 export async function obtenerDatosPerfil(req, res) {
