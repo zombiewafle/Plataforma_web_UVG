@@ -9,17 +9,21 @@ export async function obtenerListadoCursosGeneral() {
     return resultado;
 }
 
-async function listadoCursosEstudianteHome(usuario_id) {
+export async function listadoCursosEstudianteHome(id) {
     const [resultado] = await pool.query(
         `
-        SELECT c.id, c.titulo, c.descripcion, c.orden
-        FROM usuarios_cursos uc
-        INNER JOIN cursos c ON uc.curso_id = c.id
+        SELECT
+            c.id,
+            c.titulo,
+            c.descripcion,
+            c.orden
+        FROM cursos c
+        INNER JOIN usuarios_cursos uc
+            ON c.id = uc.curso_id
         WHERE uc.usuario_id = ?
-        ORDER BY c.orden ASC, c.id ASC
-        LIMIT 3
+        ORDER BY c.orden ASC
         `,
-        [usuario_id]
+        [id]
     );
 
     return resultado;
@@ -51,12 +55,17 @@ export async function listadoEjerciciosGeneral() {
 
 export async function listadoEjerciciosHome(id) {
     const [resultado] = await pool.query(
-        `
-        SELECT e.titulo, e.codigo_inicial, e.orden, p.completado, p.completado  
+        `SELECT
+            e.titulo,
+            e.codigo_inicial,
+            e.orden,
+            p.completado
         FROM ejercicios e
-        INNER JOIN progreso_ejercicios p ON e.id = p.ejercicio_id
-        p.usuario_id = ? AND p.completado = 0
-        `, [id]
+        INNER JOIN progreso_ejercicios p
+            ON e.id = p.ejercicio_id
+        WHERE p.usuario_id = ?
+        AND p.completado = 0`,
+        [id]
     );
     return resultado;
 }
@@ -67,6 +76,15 @@ export async function listadoEjerciciosHome(id) {
 // EN LUGAR DE ALGO QUE SE OBTIENE DE INTERNET. 
 
 export async function inscribirUsuarioCurso(usuario_id, curso_id) {
+    const [cursos] = await pool.query(
+        'SELECT id FROM cursos WHERE id = ?',
+        [curso_id]
+    );
+
+    if (cursos.length === 0) {
+        throw new Error('CURSO_NO_EXISTE');
+    }
+
     const [resultado] = await pool.query(
         `
         INSERT INTO usuarios_cursos (usuario_id, curso_id) VALUES (?, ?)

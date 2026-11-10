@@ -14,13 +14,18 @@ export async function obtenerListadoCursosGeneral(req, res) {
 export async function listadoCursosEstudianteHome(req, res) {
     try {
         const id = req.usuario.id;
-        const [resultado] = await homeService.listadoCursosEstudianteHome(id);
+
+        const resultado =
+            await homeService.listadoCursosEstudianteHome(id);
 
         return res.status(200).json(resultado);
-    }
-    catch (error) {
-        console.log(error);
-        return res.status(500).json({ error: 'Error al obtener los cursos del estudiante' })
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            error: "Error al obtener los cursos del estudiante"
+        });
     }
 }
 
