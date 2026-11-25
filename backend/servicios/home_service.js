@@ -30,14 +30,13 @@ export async function listadoCursosEstudianteHome(id) {
 }
 
 //EJERCICIOS
-export async function listadoEjerciciosPorCurso(curso_id) {
+export async function listadoEjerciciosCurso(cursoId) {
     const [resultado] = await pool.query(
-        `
-        SELECT e.titulo AS ejercicio_titulo, e.instrucciones, e.codigo_inicial, e.orden AS ejercicio_orden, c.titulo AS curso_titulo, c.orden AS  curso_orden
-        FROM ejercicios e
-        INNER JOIN cursos c ON e.curso_id = c.id
-        WHERE c.id = ?
-        `, [curso_id]
+        `SELECT id, curso_id, titulo, instrucciones, codigo_inicial, orden
+        FROM ejercicios
+        WHERE curso_id = ?
+        ORDER BY orden ASC`,
+        [cursoId]
     );
 
     return resultado;
@@ -93,4 +92,16 @@ export async function inscribirUsuarioCurso(usuario_id, curso_id) {
     );
 
     return resultado;
+}
+
+export async function obtenerEjercicio(id) {
+    const [resultado] = await pool.query(
+        `SELECT id, curso_id, titulo, instrucciones, codigo_inicial, orden
+        FROM ejercicios
+        WHERE id = ?
+        LIMIT 1`,
+        [id]
+    );
+
+    return resultado[0];
 }

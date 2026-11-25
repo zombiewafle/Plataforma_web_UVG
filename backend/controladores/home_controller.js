@@ -29,19 +29,21 @@ export async function listadoCursosEstudianteHome(req, res) {
     }
 }
 
-export async function listadoEjerciciosPorCurso(req, res) {
+export async function listadoEjerciciosCurso(req, res) {
     try {
-        const curso_id = req.params.curso_id;
-        const resultado = await homeService.listadoEjerciciosPorCurso(curso_id);
+        const cursoId = req.params.curso_id;
 
-        if (!resultado) {
-            return res.status(404).json({ error: "Curso no encontrado" });
-        }
+        const resultado =
+            await homeService.listadoEjerciciosCurso(cursoId);
+
         return res.status(200).json(resultado);
-    }
-    catch (error) {
-        console.log(error);
-        return res.status(500).json({ error: "Error al obtener el listaod de ejercicios por curso" })
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            error: "Error al obtener los ejercicios del curso"
+        });
     }
 }
 
@@ -84,6 +86,11 @@ export async function inscribirUsuarioCurso(req, res) {
         if (!resultado) {
             return res.status(404).json({ error: 'No se pudo procesar la inscripción. Verifique los datos o la disponibilidad del curso.' })
         }
+
+
+        return res.status(201).json({
+            message: "Usuario inscrito correctamente"
+        });
     }
 
     catch (error) {
@@ -111,5 +118,28 @@ export async function inscribirUsuarioCurso(req, res) {
             error: 'Ocurrió un error al intentar inscribirse al curso.'
         });
     }
+}
 
+
+export async function obtenerEjercicio(req, res) {
+    try {
+        const id = req.params.ejercicio_id;
+
+        const ejercicio = await homeService.obtenerEjercicio(id);
+
+        if (!ejercicio) {
+            return res.status(404).json({
+                error: "Ejercicio no encontrado"
+            });
+        }
+
+        return res.status(200).json(ejercicio);
+
+    } catch (error) {
+        console.error("Error al obtener ejercicio:", error);
+
+        return res.status(500).json({
+            error: "Error al obtener el ejercicio"
+        });
+    }
 }

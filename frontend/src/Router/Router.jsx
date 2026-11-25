@@ -8,6 +8,10 @@ import { createBrowserRouter } from "react-router";
 import VerificarSesion from "../Componentes/VerificarSesion";
 import RutaProtegida from "../Componentes/RutaProtegida";
 import Perfil from "../Vistas/Perfil";
+import Cursos from "../Vistas/Cursos";
+import CursoDetalle from "../Vistas/CursoDetalle";
+import EjercicioDetalle from "../Vistas/EjercicioDetalle";
+import Playground from "../Vistas/Playground";
 
 const router = createBrowserRouter([
 
@@ -45,6 +49,22 @@ const router = createBrowserRouter([
                     {
                         path: "/perfil",
                         element: <Perfil />,
+                    },
+                    {
+                        path: "/cursos",
+                        element: <Cursos />,
+                    },
+                    {
+                        path: "/cursos/:id",
+                        element: <CursoDetalle />
+                    },
+                    {
+                        path: "/ejercicios/:id",
+                        element: <EjercicioDetalle />
+                    },
+                    {
+                        path: "/playground/:ejercicioId",
+                        element: <Playground />
                     },
 
                 ]
