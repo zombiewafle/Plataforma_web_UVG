@@ -12,6 +12,7 @@ import Cursos from "../Vistas/Cursos";
 import CursoDetalle from "../Vistas/CursoDetalle";
 import EjercicioDetalle from "../Vistas/EjercicioDetalle";
 import Playground from "../Vistas/Playground";
+import ResetPassword from "../Vistas/ResetPassword";
 
 const router = createBrowserRouter([
 
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
             {
                 path: "/olvido-contrasena",
                 element: <OlvidoContraseña />,
+            },
+            {
+                path: "/restablecer-contrasena",
+                element: <ResetPassword />,
             },
         ],
     },

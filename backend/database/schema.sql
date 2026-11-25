@@ -13,6 +13,7 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 
 DROP TABLE IF EXISTS `progreso_ejercicios`;
 DROP TABLE IF EXISTS `solicitudes_maestros`;
+DROP TABLE IF EXISTS `password_reset_tokens`;
 DROP TABLE IF EXISTS `ejercicios`;
 DROP TABLE IF EXISTS `cursos`;
 DROP TABLE IF EXISTS `usuarios`;
@@ -31,6 +32,26 @@ CREATE TABLE `usuarios` (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE password_reset_tokens (
+    id INT NOT NULL AUTO_INCREMENT,
+    usuario_id INT NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+    expira_en DATETIME NOT NULL,
+    usado_en DATETIME DEFAULT NULL,
+    creado_en TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_password_reset_token_hash (token_hash),
+    KEY idx_password_reset_usuario (usuario_id),
+
+    CONSTRAINT fk_password_reset_usuario
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cursos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
