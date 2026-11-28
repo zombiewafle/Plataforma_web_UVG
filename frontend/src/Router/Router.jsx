@@ -7,6 +7,11 @@ import OlvidoContraseña from "../Vistas/ForgotPassword";
 import { createBrowserRouter } from "react-router";
 import VerificarSesion from "../Componentes/VerificarSesion";
 import RutaProtegida from "../Componentes/RutaProtegida";
+import Perfil from "../Vistas/Perfil";
+import Cursos from "../Vistas/Cursos";
+import CursoDetalle from "../Vistas/CursoDetalle";
+import EjercicioDetalle from "../Vistas/EjercicioDetalle";
+import Playground from "../Vistas/Playground";
 import ResetPassword from "../Vistas/ResetPassword";
 
 const router = createBrowserRouter([
@@ -45,7 +50,28 @@ const router = createBrowserRouter([
                     {
                         path: "/home",
                         element: <Home />,
-                    }
+                    },
+                    {
+                        path: "/perfil",
+                        element: <Perfil />,
+                    },
+                    {
+                        path: "/cursos",
+                        element: <Cursos />,
+                    },
+                    {
+                        path: "/cursos/:id",
+                        element: <CursoDetalle />
+                    },
+                    {
+                        path: "/ejercicios/:id",
+                        element: <EjercicioDetalle />
+                    },
+                    {
+                        path: "/playground/:ejercicioId",
+                        element: <Playground />
+                    },
+
                 ]
             },
         ],
