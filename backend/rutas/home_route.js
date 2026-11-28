@@ -7,7 +7,9 @@ import {
     listadoEjerciciosCurso,
     obtenerListadoCursosGeneral,
     inscribirUsuarioCurso,
-    obtenerEjercicio
+    obtenerEjercicio,
+    obtenerProgresoEjercicio,
+    guardarProgresoEjercicio
 } from '../controladores/home_controller.js';
 
 const Homerouter = Router();
@@ -20,4 +22,7 @@ Homerouter.get('/ejercicios', listadoEjerciciosGeneral);
 Homerouter.get('/en-progreso', verificarToken, listadoEjerciciosHome);
 Homerouter.post('/cursos/:curso_id/inscripcion', verificarToken, inscribirUsuarioCurso);
 Homerouter.get('/ejercicios/:ejercicio_id', verificarToken, obtenerEjercicio);
+Homerouter.get("/ejercicios/:ejercicio_id/progreso", verificarToken, obtenerProgresoEjercicio);
+Homerouter.put("/ejercicios/:ejercicio_id/progreso", verificarToken, guardarProgresoEjercicio);
+
 export default Homerouter;

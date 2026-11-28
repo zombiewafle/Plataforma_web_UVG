@@ -143,3 +143,57 @@ export async function obtenerEjercicio(req, res) {
         });
     }
 }
+
+export async function obtenerProgresoEjercicio(req, res) {
+    try {
+        const usuarioId = req.usuario.id;
+        const ejercicioId = req.params.ejercicio_id;
+
+        const progreso =
+            await homeService.obtenerProgresoEjercicio(
+                usuarioId,
+                ejercicioId
+            );
+
+        return res.status(200).json(progreso);
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            error: "Error al obtener el progreso"
+        });
+    }
+}
+
+
+export async function guardarProgresoEjercicio(req, res) {
+    try {
+        const usuarioId = req.usuario.id;
+        const ejercicioId = req.params.ejercicio_id;
+
+        const { codigos } = req.body;
+
+        if (!Array.isArray(codigos)) {
+            return res.status(400).json({
+                error: "codigos debe ser un arreglo"
+            });
+        }
+
+        const progreso =
+            await homeService.guardarProgresoEjercicio(
+                usuarioId,
+                ejercicioId,
+                codigos
+            );
+
+        return res.status(200).json(progreso);
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            error: "Error al guardar el progreso"
+        });
+    }
+}
