@@ -1,124 +1,179 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 
-
 const API_URL = import.meta.env.VITE_API_URL;
 const HOME_API = `${API_URL}/home`;
+
+async function solicitar(url, opciones = {}) {
+    const respuesta = await fetch(url, {
+        credentials: "include",
+        ...opciones
+    });
+
+    const tipo = respuesta.headers.get("content-type") ?? "";
+
+    if (!tipo.includes("application/json")) {
+        throw new Error(
+            `Respuesta inesperada del servidor (${respuesta.status})`
+        );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok) {
+        throw new Error(
+            datos?.error ?? `Error ${respuesta.status}`
+        );
+    }
+
+    return datos;
+}
 
 export default function Playground() {
     const { ejercicioId } = useParams();
 
     const [ejercicio, setEjercicio] = useState(null);
     const [codigos, setCodigos] = useState({});
+
     const [cargando, setCargando] = useState(true);
     const [guardando, setGuardando] = useState(false);
+    const [entregando, setEntregando] = useState(false);
+    const [retirando, setRetirando] = useState(false);
+
     const [mensaje, setMensaje] = useState("");
     const [error, setError] = useState("");
 
+    const [estado, setEstado] = useState("pendiente");
+    const [retroalimentacion, setRetroalimentacion] = useState("");
+
+    const bloqueado =
+        estado === "entregado" ||
+        estado === "aprobado";
+
+    const ocupado =
+        guardando || entregando || retirando;
+
+    // const estados = {
+    //     pendiente: "Pendiente",
+    //     en_progreso: "En progreso",
+    //     // entregado: "Pendiente de revisión",
+    //     aprobado: "Aprobado",
+    //     requiere_correcciones: "Requiere correcciones"
+    // };
+
+    const coloresEstado = {
+        pendiente: "bg-gray-100 text-gray-700",
+        en_progreso: "bg-blue-100 text-blue-700",
+        entregado: "bg-amber-100 text-amber-700",
+        aprobado: "bg-green-100 text-green-700",
+        requiere_correcciones: "bg-red-100 text-red-700"
+    };
+
+
+    // CARGAR EJERCICIO Y PROGRESO
+
     useEffect(() => {
+        const controller = new AbortController();
+
         async function cargarDatos() {
             try {
                 setCargando(true);
                 setError("");
+                setMensaje("");
+                setEjercicio(null);
 
-                // 1. Cargar ejercicio y lenguajes
-                const respuestaEjercicio = await fetch(
-                    `${HOME_API}/ejercicios/${ejercicioId}`,
-                    {
-                        credentials: "include"
-                    }
-                );
+                const [datosEjercicio, progreso] =
+                    await Promise.all([
+                        solicitar(
+                            `${HOME_API}/ejercicios/${ejercicioId}`,
+                            { signal: controller.signal }
+                        ),
+                        solicitar(
+                            `${HOME_API}/ejercicios/${ejercicioId}/progreso`,
+                            { signal: controller.signal }
+                        )
+                    ]);
 
-                if (!respuestaEjercicio.ok) {
-                    throw new Error("Error al cargar el ejercicio");
-                }
-
-                const datosEjercicio =
-                    await respuestaEjercicio.json();
-
-                setEjercicio(datosEjercicio);
-
-                // Código inicial de cada lenguaje
                 const codigosIniciales = {};
 
                 datosEjercicio.lenguajes.forEach((lenguaje) => {
+                    const guardado = progreso?.codigos?.find(
+                        item => item.lenguaje === lenguaje.slug
+                    );
+
                     codigosIniciales[lenguaje.slug] =
-                        lenguaje.codigo_inicial || "";
+                        guardado?.codigo ??
+                        lenguaje.codigo_inicial ??
+                        "";
                 });
 
-                // 2. Cargar progreso guardado
-                const respuestaProgreso = await fetch(
-                    `${HOME_API}/ejercicios/${ejercicioId}/progreso`,
-                    {
-                        credentials: "include"
-                    }
-                );
-
-                if (!respuestaProgreso.ok) {
-                    throw new Error(
-                        "Error al cargar el progreso"
-                    );
-                }
-
-                const progreso =
-                    await respuestaProgreso.json();
-
-                // Si ya hay progreso, sobrescribimos el código inicial
-                if (progreso) {
-                    progreso.codigos.forEach((item) => {
-                        codigosIniciales[item.lenguaje] =
-                            item.codigo;
-                    });
-                }
-
+                setEjercicio(datosEjercicio);
                 setCodigos(codigosIniciales);
 
+                setEstado(progreso?.estado ?? "pendiente");
+
+                setRetroalimentacion(
+                    progreso?.retroalimentacion ?? ""
+                );
+
             } catch (error) {
-                console.error(error);
-                setError(error.message);
+                if (error.name !== "AbortError") {
+                    console.error(error);
+                    setError(error.message);
+                }
 
             } finally {
-                setCargando(false);
+                if (!controller.signal.aborted) {
+                    setCargando(false);
+                }
             }
         }
 
         cargarDatos();
 
+        return () => controller.abort();
+
     }, [ejercicioId]);
 
 
+    // PERSISTIR CÓDIGO EN EL BACKEND
+
+    async function persistirCodigo() {
+        const listaCodigos = ejercicio.lenguajes.map(
+            lenguaje => ({
+                lenguaje: lenguaje.slug,
+                codigo: codigos[lenguaje.slug] ?? ""
+            })
+        );
+
+        const progreso = await solicitar(
+            `${HOME_API}/ejercicios/${ejercicioId}/progreso`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    codigos: listaCodigos
+                })
+            }
+        );
+
+        setEstado(progreso.estado);
+    }
+
+
+    // GUARDAR PROGRESO
+
     async function guardarProgreso() {
+        if (bloqueado || ocupado) return;
+
         try {
             setGuardando(true);
             setMensaje("");
             setError("");
 
-            const listaCodigos = Object.entries(codigos).map(
-                ([lenguaje, codigo]) => ({
-                    lenguaje,
-                    codigo
-                })
-            );
-
-            const respuesta = await fetch(
-                `${HOME_API}/ejercicios/${ejercicioId}/progreso`,
-                {
-                    method: "PUT",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        codigos: listaCodigos
-                    })
-                }
-            );
-
-            if (!respuesta.ok) {
-                throw new Error(
-                    "No se pudo guardar el progreso"
-                );
-            }
+            await persistirCodigo();
 
             setMensaje("Progreso guardado correctamente");
 
@@ -131,6 +186,72 @@ export default function Playground() {
         }
     }
 
+
+    // ENTREGAR EJERCICIO
+
+    async function entregarEjercicio() {
+        if (bloqueado || ocupado) return;
+
+        try {
+            setEntregando(true);
+            setMensaje("");
+            setError("");
+
+            // Guardar el código antes de entregarlo
+            await persistirCodigo();
+
+            const datos = await solicitar(
+                `${HOME_API}/ejercicios/${ejercicioId}/entregar`,
+                {
+                    method: "PATCH"
+                }
+            );
+
+            setEstado(datos.estado);
+            setRetroalimentacion("");
+            setMensaje(datos.message);
+
+        } catch (error) {
+            console.error(error);
+            setError(error.message);
+
+        } finally {
+            setEntregando(false);
+        }
+    }
+
+
+    // RETIRAR ENTREGA
+
+    async function retirarEntrega() {
+        if (estado !== "entregado" || ocupado) return;
+
+        try {
+            setRetirando(true);
+            setMensaje("");
+            setError("");
+
+            const datos = await solicitar(
+                `${HOME_API}/ejercicios/${ejercicioId}/retirar-entrega`,
+                {
+                    method: "PATCH"
+                }
+            );
+
+            setEstado(datos.estado);
+            setMensaje(datos.message);
+
+        } catch (error) {
+            console.error(error);
+            setError(error.message);
+
+        } finally {
+            setRetirando(false);
+        }
+    }
+
+
+    // VISTA PREVIA
 
     const resultado = `
         <!DOCTYPE html>
@@ -160,11 +281,10 @@ export default function Playground() {
         );
     }
 
-
-    if (error && !ejercicio) {
+    if (!ejercicio) {
         return (
             <div className="p-8 text-red-600">
-                {error}
+                {error || "Ejercicio no encontrado"}
             </div>
         );
     }
@@ -175,11 +295,9 @@ export default function Playground() {
 
             <div className="mx-auto max-w-7xl">
 
-                <div className="mb-6">
+                {/* ENCABEZADO */}
 
-                    <p className="text-sm text-gray-500">
-                        Ejercicio {ejercicio?.orden}
-                    </p>
+                <div className="mb-6">
 
                     <Link
                         to={`/ejercicios/${ejercicioId}`}
@@ -188,55 +306,127 @@ export default function Playground() {
                         ← Regresar al ejercicio
                     </Link>
 
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+
+                        <p className="text-sm text-gray-500">
+                            Ejercicio {ejercicio.orden}
+                        </p>
+                        {/* 
+                        <span
+                            className={`rounded-full px-3 py-1 text-sm font-medium ${coloresEstado[estado]}`}
+                        >
+                            {estados[estado]}
+                        </span> */}
+
+                    </div>
+
                     <h1 className="text-3xl font-bold">
-                        {ejercicio?.titulo}
+                        {ejercicio.titulo}
                     </h1>
 
                     <p className="mt-2 text-gray-600">
-                        {ejercicio?.instrucciones}
+                        {ejercicio.instrucciones}
                     </p>
 
                 </div>
 
 
+                {/* AVISOS DEL ESTADO
+
+                {estado === "entregado" && (
+                    <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
+
+                        <p className="font-semibold">
+                            Ejercicio entregado
+                        </p>
+
+                        <p className="mt-1 text-sm">
+                            Tu ejercicio está pendiente de revisión.
+                            Puedes retirar la entrega si necesitas
+                            modificar tu código.
+                        </p>
+
+                    </div>
+                )}
+ */}
+
+                {estado === "aprobado" && (
+                    <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
+
+                        <p className="font-semibold">
+                            ✓ Ejercicio aprobado
+                        </p>
+
+                        <p className="mt-1 text-sm">
+                            El maestro ha aprobado tu trabajo.
+                        </p>
+
+                    </div>
+                )}
+
+
+                {estado === "requiere_correcciones" && (
+                    <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+
+                        <p className="font-semibold">
+                            Tu ejercicio requiere correcciones
+                        </p>
+
+                        <p className="mt-2 whitespace-pre-wrap text-sm">
+                            {retroalimentacion ||
+                                "Revisa tu código y vuelve a entregarlo."}
+                        </p>
+
+                    </div>
+                )}
+
+
                 <div className="grid gap-6 lg:grid-cols-2">
 
                     {/* EDITORES */}
+
                     <div className="space-y-5">
 
-                        {ejercicio?.lenguajes.map((lenguaje) => (
+                        {ejercicio.lenguajes.map((lenguaje) => (
 
                             <div key={lenguaje.id}>
 
-                                <h2 className="mb-2 font-semibold">
-                                    {lenguaje.nombre}
-                                </h2>
+                                <div className="mb-2 flex items-center justify-between">
+
+                                    <h2 className="font-semibold">
+                                        {lenguaje.nombre}
+                                    </h2>
+
+                                    {bloqueado && (
+                                        <span className="text-xs text-gray-500">
+                                            Solo lectura
+                                        </span>
+                                    )}
+
+                                </div>
 
                                 <textarea
+
                                     value={
                                         codigos[lenguaje.slug] ?? ""
                                     }
 
-                                    onChange={(e) =>
+                                    readOnly={bloqueado || ocupado}
+
+                                    onChange={(e) => {
                                         setCodigos((actuales) => ({
                                             ...actuales,
                                             [lenguaje.slug]:
                                                 e.target.value
-                                        }))
-                                    }
+                                        }));
 
-                                    className="
-                                        h-64
-                                        w-full
-                                        resize-none
-                                        rounded-lg
-                                        border
-                                        bg-gray-900
-                                        p-4
-                                        font-mono
-                                        text-sm
-                                        text-white
-                                    "
+                                        setMensaje("");
+                                    }}
+
+                                    className={`h-64 w-full resize-none rounded-lg border bg-gray-900 p-4 font-mono text-sm text-white ${bloqueado
+                                        ? "cursor-not-allowed opacity-70"
+                                        : ""
+                                        }`}
                                 />
 
                             </div>
@@ -244,34 +434,63 @@ export default function Playground() {
                         ))}
 
 
-                        <button
-                            onClick={guardarProgreso}
-                            disabled={guardando}
-                            className="
-                                rounded-lg
-                                bg-green-600
-                                px-5
-                                py-2.5
-                                font-medium
-                                text-white
-                                transition
-                                hover:bg-green-700
-                                disabled:opacity-50
-                            "
-                        >
-                            {guardando
-                                ? "Guardando..."
-                                : "Guardar progreso"
-                            }
-                        </button>
+                        {/* BOTONES */}
 
+                        <div className="flex flex-wrap gap-3">
+
+                            <button
+                                onClick={guardarProgreso}
+                                disabled={
+                                    bloqueado ||
+                                    ocupado ||
+                                    !ejercicio.lenguajes.length
+                                }
+                                className="rounded-lg bg-green-600 px-5 py-2.5 font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {guardando
+                                    ? "Guardando..."
+                                    : "Guardar progreso"}
+                            </button>
+
+
+                            {!bloqueado && (
+                                <button
+                                    onClick={entregarEjercicio}
+                                    disabled={
+                                        ocupado ||
+                                        !ejercicio.lenguajes.length
+                                    }
+                                    className="rounded-lg bg-blue-600 px-5 py-2.5 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    {entregando
+                                        ? "Entregando..."
+                                        : "Entregar ejercicio"}
+                                </button>
+                            )}
+
+
+                            {estado === "entregado" && (
+                                <button
+                                    onClick={retirarEntrega}
+                                    disabled={ocupado}
+                                    className="rounded-lg bg-amber-600 px-5 py-2.5 font-medium text-white transition hover:bg-amber-700 disabled:opacity-50"
+                                >
+                                    {retirando
+                                        ? "Retirando..."
+                                        : "Retirar entrega"}
+                                </button>
+                            )}
+
+                        </div>
+
+
+                        {/* MENSAJES */}
 
                         {mensaje && (
                             <p className="text-green-600">
                                 {mensaje}
                             </p>
                         )}
-
 
                         {error && (
                             <p className="text-red-600">
@@ -283,6 +502,7 @@ export default function Playground() {
 
 
                     {/* VISTA PREVIA */}
+
                     <div>
 
                         <h2 className="mb-2 font-semibold">
@@ -293,13 +513,7 @@ export default function Playground() {
                             title="Vista previa"
                             srcDoc={resultado}
                             sandbox="allow-scripts"
-                            className="
-                                h-[600px]
-                                w-full
-                                rounded-lg
-                                border
-                                bg-white
-                            "
+                            className="h-[600px] w-full rounded-lg border bg-white"
                         />
 
                     </div>

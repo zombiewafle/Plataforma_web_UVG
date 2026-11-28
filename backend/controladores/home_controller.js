@@ -32,14 +32,14 @@ export async function listadoCursosEstudianteHome(req, res) {
 export async function listadoEjerciciosCurso(req, res) {
     try {
         const cursoId = req.params.curso_id;
+        const usuarioId = req.usuario.id;
 
-        const resultado =
-            await homeService.listadoEjerciciosCurso(cursoId);
+        const resultado = await homeService.listadoEjerciciosCurso(cursoId, usuarioId);
 
         return res.status(200).json(resultado);
 
     } catch (error) {
-        console.error(error);
+        console.error("Error al listar ejercicios:", error);
 
         return res.status(500).json({
             error: "Error al obtener los ejercicios del curso"
@@ -190,6 +190,24 @@ export async function guardarProgresoEjercicio(req, res) {
         return res.status(200).json(progreso);
 
     } catch (error) {
+        if (error.message === 'EJERCICIO_BLOQUEADO') {
+            return res.status(409).json({
+                error: "El ejercicio está bloqueado para modificaciones"
+            });
+        }
+
+        if (error.message === 'NO_INSCRITO') {
+            return res.status(403).json({
+                error: "No estás inscrito en este curso"
+            });
+        }
+
+        if (error.message === 'LENGUAJE_INVALIDO') {
+            return res.status(400).json({
+                error: "El lenguaje no pertenece a este ejercicio"
+            });
+        }
+
         console.error(error);
 
         return res.status(500).json({
@@ -197,3 +215,64 @@ export async function guardarProgresoEjercicio(req, res) {
         });
     }
 }
+
+export async function entregarEjercicio(req, res) {
+    try {
+        const usuarioId = req.usuario.id;
+        const ejercicioId = req.params.ejercicio_id;
+
+        const resultado = await homeService.entregarEjercicio(
+            usuarioId,
+            ejercicioId
+        );
+
+        if (resultado === 0) {
+            return res.status(409).json({
+                error: "No se puede entregar este ejercicio"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Ejercicio entregado correctamente",
+            estado: "entregado"
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            error: "Error al entregar el ejercicio"
+        });
+    }
+}
+
+export async function retirarEntrega(req, res) {
+    try {
+        const usuarioId = req.usuario.id;
+        const ejercicioId = req.params.ejercicio_id;
+
+        const resultado = await homeService.retirarEntrega(
+            usuarioId,
+            ejercicioId
+        );
+
+        if (resultado === 0) {
+            return res.status(409).json({
+                error: "No se puede retirar esta entrega"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Entrega retirada correctamente",
+            estado: "en_progreso"
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            error: "Error al retirar la entrega"
+        });
+    }
+}
+

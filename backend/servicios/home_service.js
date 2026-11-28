@@ -26,13 +26,16 @@ export async function listadoCursosEstudianteHome(id) {
 }
 
 //EJERCICIOS
-export async function listadoEjerciciosCurso(cursoId) {
+export async function listadoEjerciciosCurso(cursoId, usuarioId) {
     const [resultado] = await pool.query(
-        `SELECT id, curso_id, titulo, instrucciones, codigo_inicial, orden
-        FROM ejercicios
-        WHERE curso_id = ?
-        ORDER BY orden ASC`,
-        [cursoId]
+        `SELECT e.id, e.curso_id, e.titulo, e.instrucciones, e.orden, COALESCE(p.estado, 'pendiente') AS estado, COALESCE(p.completado, 0) AS completado, p.entregado_en, p.revisado_en
+        FROM ejercicios e
+        LEFT JOIN progreso_ejercicios p
+            ON e.id = p.ejercicio_id
+            AND p.usuario_id = ?
+        WHERE e.curso_id = ?
+        ORDER BY e.orden`,
+        [usuarioId, cursoId]
     );
 
     return resultado;
@@ -45,23 +48,6 @@ export async function listadoEjerciciosGeneral() {
         FROM ejercicios e
         `
     )
-    return resultado;
-}
-
-export async function listadoEjerciciosHome(id) {
-    const [resultado] = await pool.query(
-        `SELECT
-            e.titulo,
-            e.codigo_inicial,
-            e.orden,
-            p.completado
-        FROM ejercicios e
-        INNER JOIN progreso_ejercicios p
-            ON e.id = p.ejercicio_id
-        WHERE p.usuario_id = ?
-        AND p.completado = 0`,
-        [id]
-    );
     return resultado;
 }
 
@@ -122,13 +108,7 @@ export async function obtenerEjercicio(id) {
 
 export async function obtenerProgresoEjercicio(usuarioId, ejercicioId) {
     const [progresos] = await pool.query(
-        `SELECT
-            id,
-            usuario_id,
-            ejercicio_id,
-            completado,
-            completado_en,
-            actualizado_en
+        `SELECT id, usuario_id, ejercicio_id, completado, completado_en, actualizado_en, estado, entregado_en, revisado_en, revisado_por, retroalimentacion
         FROM progreso_ejercicios
         WHERE usuario_id = ?
         AND ejercicio_id = ?
@@ -158,6 +138,49 @@ export async function obtenerProgresoEjercicio(usuarioId, ejercicioId) {
     };
 }
 
+export async function entregarEjercicio(usuarioId, ejercicioId) {
+    const [resultado] = await pool.query(
+        `UPDATE progreso_ejercicios p
+        INNER JOIN ejercicios e
+            ON e.id = p.ejercicio_id
+        INNER JOIN usuarios_cursos uc
+            ON uc.curso_id = e.curso_id
+            AND uc.usuario_id = p.usuario_id
+        SET p.estado = 'entregado',
+            p.entregado_en = NOW(),
+            p.revisado_en = NULL,
+            p.revisado_por = NULL,
+            p.retroalimentacion = NULL
+        WHERE p.usuario_id = ?
+        AND p.ejercicio_id = ?
+        AND p.estado IN (
+            'en_progreso',
+            'requiere_correcciones'
+        )
+        AND EXISTS (
+            SELECT 1
+            FROM progreso_codigo pc
+            WHERE pc.progreso_id = p.id
+        )`,
+        [usuarioId, ejercicioId]
+    );
+
+    return resultado.affectedRows;
+}
+
+export async function retirarEntrega(usuarioId, ejercicioId) {
+    const [resultado] = await pool.query(
+        `UPDATE progreso_ejercicios
+        SET estado = 'en_progreso',
+            entregado_en = NULL
+        WHERE usuario_id = ?
+        AND ejercicio_id = ?
+        AND estado = 'entregado'`,
+        [usuarioId, ejercicioId]
+    );
+
+    return resultado.affectedRows;
+}
 
 export async function guardarProgresoEjercicio(
     usuarioId,
@@ -220,4 +243,22 @@ export async function guardarProgresoEjercicio(
     } finally {
         connection.release();
     }
+}
+
+export async function listadoEjerciciosHome(usuarioId) {
+    const [resultado] = await pool.query(
+        `SELECT e.id, e.curso_id, e.titulo, e.instrucciones, e.orden, p.estado, p.completado, p.actualizado_en
+        FROM ejercicios e
+        INNER JOIN progreso_ejercicios p
+            ON e.id = p.ejercicio_id
+        WHERE p.usuario_id = ?
+        AND p.estado IN (
+            'en_progreso',
+            'requiere_correcciones'
+        )
+        ORDER BY p.actualizado_en DESC`,
+        [usuarioId]
+    );
+
+    return resultado;
 }

@@ -90,6 +90,12 @@ function CursoDetalle() {
         );
     }
 
+    const total = ejercicios.length;
+
+    const completados = ejercicios.filter(ejercicio => ejercicio.estado === "entregado" || ejercicio.estado === "aprobado").length;
+
+    const porcentaje = total > 0 ? (completados / total) * 100 : 0;
+
     return (
         <section className="w-full px-4 py-10">
             <div className="mx-auto max-w-5xl">
@@ -109,6 +115,25 @@ function CursoDetalle() {
                     <p className="mt-3 text-gray-400">
                         {curso.descripcion}
                     </p>
+                </div>
+
+                <div className="my-6">
+                    <div className="mb-2 flex justify-between text-sm">
+                        <span className="font-medium">
+                            Progreso del curso
+                        </span>
+
+                        <span className="text-gray-500">
+                            {completados}/{total}
+                        </span>
+                    </div>
+
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+                        <div
+                            className="h-full rounded-full bg-green-600 transition-all duration-500"
+                            style={{ width: `${porcentaje}%` }}
+                        />
+                    </div>
                 </div>
 
                 <div className="mt-10">
