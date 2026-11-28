@@ -4,7 +4,7 @@
 -- y progreso_ejercicios estan vacias. MariaDB DDL hace commits implicitos.
 SET NAMES utf8mb4;
 
-CREATE TABLE usuarios_cursos (
+CREATE TABLE IF NOT EXISTS usuarios_cursos (
     usuario_id INT NOT NULL,
     curso_id INT NOT NULL,
     asignado_en TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
