@@ -100,26 +100,37 @@ function EjercicioDetalle() {
                         Código inicial
                     </h2>
 
-                    <pre className="mt-4 overflow-x-auto rounded-xl border border-gray-700 bg-black/20 p-5">
-                        <code>
-                            {ejercicio.codigo_inicial ||
-                                "Este ejercicio no tiene código inicial."}
-                        </code>
-                    </pre>
+                    {ejercicio.lenguajes?.length > 0 ? (
+                        ejercicio.lenguajes.map((lenguaje) => (
+                            <div key={lenguaje.id} className="mt-4">
+
+                                <h3 className="mb-2 font-medium text-gray-300">
+                                    {lenguaje.nombre}
+                                </h3>
+
+                                <pre className="overflow-x-auto rounded-xl border border-gray-700 bg-black/20 p-5">
+                                    <code>
+                                        {lenguaje.codigo_inicial ||
+                                            "Este lenguaje no tiene código inicial."}
+                                    </code>
+                                </pre>
+
+                            </div>
+                        ))
+                    ) : (
+                        <p className="mt-4 text-gray-400">
+                            Este ejercicio no tiene código inicial.
+                        </p>
+                    )}
                 </div>
 
                 <div className="mt-8">
-                    <button
-                        type="button"
-                        className="rounded-lg bg-green-600 px-5 py-2.5 font-medium text-white transition hover:bg-green-700"
+                    <Link
+                        to={`/playground/${ejercicio.id}`}
+                        className="inline-block rounded-lg bg-green-600 px-5 py-2.5 font-medium text-white transition hover:bg-green-700"
                     >
-                        <Link
-                            to={`/playground/${ejercicio.id}`}
-                            className="inline-block rounded-lg bg-green-600 px-5 py-2.5 font-medium text-white transition hover:bg-green-700"
-                        >
-                            Empezar ejercicio
-                        </Link>
-                    </button>
+                        Empezar ejercicio
+                    </Link>
                 </div>
 
             </div>
