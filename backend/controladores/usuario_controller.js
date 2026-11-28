@@ -52,9 +52,7 @@ export async function loginUsuario(req, res) {
             path: '/'
         });
 
-        return res.status(200).json({
-            usuario: resultado.usuario
-        });
+        return res.status(200).json({ usuario: resultado.usuario });
 
     } catch (error) {
         if (error.message === 'CREDENCIALES_INVALIDAS') {
@@ -62,7 +60,7 @@ export async function loginUsuario(req, res) {
         }
 
         console.error(error);
-        res.status(500).json({ error: 'Error al iniciar sesión' });
+        return res.status(500).json({ error: 'Error al iniciar sesión' });
     }
 };
 
@@ -78,24 +76,10 @@ export async function obtenerPerfil(req, res) {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Error al obtener el perfil" });
+        return res.status(500).json({ error: "Error al obtener el perfil" });
 
     }
 };
-
-
-export async function logout(req, res) {
-    res.clearCookie('token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/'
-    });
-    return res.status(200).json({
-        mensaje: 'Sesión cerrada correctamente'
-    })
-};
-
 
 export async function olvido_contraseña(req, res) {
     const { correo } = req.body;
@@ -114,25 +98,81 @@ export async function olvido_contraseña(req, res) {
     }
 };
 
+export async function logout(req, res) {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/'
+    });
+    return res.status(200).json({ mensaje: 'Sesión cerrada correctamente' })
+};
+
+export async function obtenerDatosPerfil(req, res) {
+    try {
+        const id = req.usuario.id;
+        const resultado = await usuarioService.obtenerDatosPerfil(id);
+        if (!resultado) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+        return res.status(200).json(resultado)
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+}
+
+export async function cambiarDatosPerfil(req, res) {
+    try {
+        const id = req.usuario.id;
+        const { nombre, correo } = req.body;
+
+        if (nombre === undefined && correo === undefined) {
+            return res.status(404).json({ error: "No se enviaron datos para actualizar" });
+        }
+
+        if (correo !== undefined && correo.trim() === '') {
+            return res.status(400).json({
+                error: "El correo no puede estar vacío"
+            });
+        }
+
+        const resultado = await usuarioService.cambiarDatosPerfil(id, { nombre, correo });
+        return res.status(200).json(resultado);
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Error interno del servidor" });
+    }
+}
+
 export async function restablecerContraseña(req, res) {
     const { tokenCrudo, nuevaPassword, confirmarPassword } = req.body;
 
     if (!nuevaPassword || !confirmarPassword) {
-        return res.status(400).json({ error: "Faltan campos requeridos" });
+        return res.status(400).json({
+            error: "Faltan campos requeridos"
+        });
     }
 
-
     if (nuevaPassword !== confirmarPassword) {
-        return res.status(422).json({ error: "Ambos campos deben ser iguales" });
+        return res.status(422).json({
+            error: "Ambos campos deben ser iguales"
+        });
     }
 
     try {
-        await usuarioService.restablecerContraseña(tokenCrudo, nuevaPassword)
-        return res.status(200).json({ message: "Contraseña actualizada correctamente." });
+        await usuarioService.restablecerContraseña(
+            tokenCrudo,
+            nuevaPassword
+        );
 
+        return res.status(200).json({
+            message: "Contraseña actualizada correctamente."
+        });
 
     } catch (error) {
-
         if (error.message === 'TOKEN_INVALIDO') {
             return res.status(400).json({
                 error: "El enlace es inválido o ha expirado"
@@ -140,6 +180,9 @@ export async function restablecerContraseña(req, res) {
         }
 
         console.error(error);
-        return res.status(500).json({ error: "Error interno del servidor" });
+
+        return res.status(500).json({
+            error: "Error interno del servidor"
+        });
     }
 }

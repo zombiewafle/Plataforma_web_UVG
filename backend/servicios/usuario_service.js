@@ -1,5 +1,5 @@
 import pool from '../config/db.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { correoService } from './correo_service.js';
@@ -48,7 +48,10 @@ export async function loginUsuario(identificador, password) {
     }
 
     const token = jwt.sign(
-        { id: usuario.id, rol: usuario.rol },
+        {
+            id: usuario.id,
+            rol: usuario.rol
+        },
         process.env.JWT_SECRET,
         {
             expiresIn: '7d',
@@ -97,8 +100,43 @@ export async function olvidoContraseñaToken(correo) {
 
     } catch (error) {
         console.error('Error al enviar el correo: ', error);
+        throw error
     }
 
+}
+
+export async function obtenerDatosPerfil(id) {
+    const [usuario] = await pool.query(
+        'SELECT username, nombre, correo, rol FROM usuarios WHERE id = ? LIMIT 1', [id]
+    );
+    return usuario[0];
+}
+
+export async function cambiarDatosPerfil(id, { nombre, correo }) {
+    const campos = [];
+    const valores = [];
+
+    if (nombre !== undefined) {
+        campos.push('nombre = ?');
+        valores.push(nombre);
+    }
+
+    if (correo !== undefined) {
+        campos.push('correo = ?');
+        valores.push(correo);
+    }
+
+    if (campos.length === 0) {
+        throw new Error('SIN_DATOS');
+    }
+
+    valores.push(id);
+
+    await pool.query(
+        `UPDATE usuarios SET ${campos.join(', ')} WHERE id = ?`, valores
+    );
+
+    return await obtenerDatosPerfil(id);
 }
 
 export async function restablecerContraseña(tokenCrudo, nuevaPassword) {
